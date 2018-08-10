@@ -66,34 +66,59 @@ def update_spec_from_peaks(spec, model_indicies, peak_widths=(10, 25), **kwargs)
             raise NotImplemented(f'model {basis_func["type"]} not implemented yet')
     return peak_indicies
 
-mat = scipy.io.loadmat('RRptakPLx400.mat')
-table = 'E2x400nm01Graph';
-peak_widths = 50
-gaussians = 2
+def print_best_values(spec, output):
+    model_params = {
+        'GaussianModel':   ['amplitude', 'sigma']
+    }
+    best_values = output.best_values
+    print('center    model   amplitude     sigma')
+    for i, model in enumerate(spec['model']):
+        prefix = f'm{i}_'
+        values = ', '.join(f'{best_values[prefix+param]:8.3f}' for param in model_params[model["type"]])
+        print(f'[{best_values[prefix+"center"]:3.3f}] {model["type"]:16}: {values}')
 
-spec = {
-    'x': mat[table][:,0],
-    'y': mat[table][:,1],
-    'model': [ {'type': 'GaussianModel'} for i in range(gaussians)]
-}
+def fit(mat_file, gaussians, peak_widths):
+    mat = scipy.io.loadmat(mat_file)
+    tables = list(mat.keys())
+    print('\n'.join(map(lambda t: '%d: %s' % (t[0],t[1]), enumerate(tables))))
+    table_index = int(input("Write a number to select the table to model: "))
+    table = tables[table_index]
+    print('Fitting %s with %d gaussians with peak widths %d' % (table, gaussians, peak_widths))
 
-peaks_found = update_spec_from_peaks(spec, range(len(spec['model'])), peak_widths=(peak_widths,))
-fig, ax = plt.subplots()
-ax.scatter(spec['x'], spec['y'], s=4)
-for i in peaks_found:
-    ax.axvline(x=spec['x'][i], c='black', linestyle='dotted')
-model, params = generate_model(spec)
+    spec = {
+        'x': mat[table][:,0],
+        'y': mat[table][:,1],
+        'model': [ {'type': 'GaussianModel'} for i in range(gaussians)]
+    }
 
-output = model.fit(spec['y'], params, x=spec['x'])
-fig, gridspec = output.plot(data_kws={'markersize':  1})
+    peaks_found = update_spec_from_peaks(spec, range(len(spec['model'])), peak_widths=(peak_widths,))
+    fig, ax = plt.subplots()
+    ax.scatter(spec['x'], spec['y'], s=4)
+    for i in peaks_found:
+        ax.axvline(x=spec['x'][i], c='black', linestyle='dotted')
+    model, params = generate_model(spec)
 
-fig, ax = plt.subplots()
-ax.scatter(spec['x'], spec['y'], s=4)
-components = output.eval_components(x=spec['x'])
-print(len(spec['model']))
-for i, model in enumerate(spec['model']):
-    ax.plot(spec['x'], components[f'm{i}_'])
+    output = model.fit(spec['y'], params, x=spec['x'])
+    fig, gridspec = output.plot(data_kws={'markersize':  1})
 
-plt.show()
+    fig, ax = plt.subplots()
+    ax.scatter(spec['x'], spec['y'], s=4)
+    components = output.eval_components(x=spec['x'])
+    for i, model in enumerate(spec['model']):
+        ax.plot(spec['x'], components[f'm{i}_'])
 
+
+    print_best_values(spec, output)
+
+    plt.show()
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mat_file')
+    parser.add_argument('-g', '--gaussians', default=2, type=int)
+    parser.add_argument('-w', '--peak-widths', default=50, type=int)
+    args = parser.parse_args()
+
+    fit(args.mat_file, args.gaussians, args.peak_widths)
 
