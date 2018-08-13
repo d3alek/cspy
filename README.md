@@ -2,11 +2,22 @@
 
 ## Get latest version
 
-git clone https://github.com/d3alek/cspy
+```
+> git clone https://github.com/d3alek/cspy
+```
+
+
+## Install python3 with virtualenv
+
+In Ubuntu:
+```
+> sudo apt-get install python3.6-venv
+```
 
 ## Install requirements in a virtualenv
 
 ```
+> cd cspy
 > virtualenv venv
 > source venv/bin/activate
 > pip install -r requirements.txt
