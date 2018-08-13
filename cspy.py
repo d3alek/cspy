@@ -86,7 +86,7 @@ def fit(mat_file, gaussians, peak_widths):
     print('Fitting %s with %d gaussians with peak widths %d' % (table, gaussians, peak_widths))
 
     spec = {
-        'x': mat[table][:,0],
+        'x': 1240 / mat[table][:,0],
         'y': mat[table][:,1],
         'model': [ {'type': 'GaussianModel'} for i in range(gaussians)]
     }
